@@ -1,38 +1,38 @@
-import Link from "next/link";
+"use client";
 
-export default function Home() {
+import { useState } from "react";
+import Button from "./components/Button";
+import Input from "./components/Input";
+
+
+export default function LoginPage() {
+  const [email, setEmail] = useState("");
+  const [lozinka, setLozinka] = useState("");
+
+  function handleSubmit() {
+    alert(`Email: ${email}\nLozinka: ${lozinka}`);
+  }
+
   return (
-    <main className="p-10">
-      <h1 className="text-3xl font-bold mb-4">
-        Sistem za upravljanje malim biznisom
-      </h1>
+    <main className="p-8 max-w-sm">
+      <h1 className="text-2xl font-semibold mb-4">Login</h1>
 
-      <p className="text-gray-600 mb-6">
-        Web aplikacija za praćenje proizvoda, lagera i narudžbenica.
-      </p>
+      <div className="flex flex-col gap-4">
+        <Input
+          label="Email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <Input
+          label="Lozinka"
+          type="password"
+          value={lozinka}
+          onChange={(e) => setLozinka(e.target.value)}
+        />
 
-      <nav className="flex gap-4">
-        <Link
-          href="/login"
-          className="px-4 py-2 bg-black text-white rounded"
-        >
-          Login
-        </Link>
-
-        <Link
-          href="/products"
-          className="px-4 py-2 border rounded"
-        >
-          Proizvodi
-        </Link>
-
-        <Link
-          href="/orders"
-          className="px-4 py-2 border rounded"
-        >
-          Narudžbenice
-        </Link>
-      </nav>
+        <Button onClick={handleSubmit}>Prijavi se</Button>
+      </div>
     </main>
   );
 }
