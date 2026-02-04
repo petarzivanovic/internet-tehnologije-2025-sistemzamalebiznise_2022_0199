@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import ProductCard from "../components/ProductCard";
 
-// Definišemo tip prema bazi podataka
 type Proizvod = {
   id_proizvod: number;
   naziv: string;
@@ -16,15 +15,24 @@ export default function ProizvodiPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Pozivamo API rutu koju si preimenovala (onu iz api/proizvodi)
-    fetch("/api/proizvodi")
-      .then((res) => res.json())
-      .then((data) => {
-        setProizvodi(data);
-        setLoading(false);
-      })
-      .catch((err) => console.error("Greška pri učitavanju:", err));
-  }, []);
+    fetch("/api/proizvodi")
+      .then((res) => res.json())
+      .then((data) => {
+        
+        if (Array.isArray(data)) {
+          setProizvodi(data);
+        } else {
+          console.error("API nije vratio niz:", data);
+          setProizvodi([]);
+        }
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Greška pri učitavanju:", err);
+        setProizvodi([]); 
+        setLoading(false);
+      });
+  }, []);
 
   if (loading) return <p className="p-10 text-black">Učitavanje proizvoda...</p>;
 
@@ -40,7 +48,6 @@ export default function ProizvodiPage() {
         </a>
       </div>
 
-      {/* Ovde koristimo tvoj ProductCard unutar grid sistema */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {proizvodi.map((p) => (
           <ProductCard 

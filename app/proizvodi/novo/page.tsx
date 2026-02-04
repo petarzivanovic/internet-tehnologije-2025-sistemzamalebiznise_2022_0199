@@ -12,17 +12,23 @@ export default function NoviProizvodPage() {
   });
 
   const spasiProizvod = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const res = await fetch("/api/proizvodi", {
-      method: "POST",
-      body: JSON.stringify(forma),
-    });
+  e.preventDefault();
+  const res = await fetch("/api/proizvodi", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(forma),
+  });
 
-    if (res.ok) {
-      alert("Proizvod uspešno dodat!");
-      setForma({ naziv: "", sifra: "", cena: 0, kolicina: 0 });
-    }
-  };
+  if (res.ok) {
+    alert("Proizvod uspešno dodat!");
+    setForma({ naziv: "", sifra: "", cena: 0, kolicina: 0 });
+  } else {
+    const errorData = await res.json();
+    alert("Greška: " + errorData.error);
+  }
+};
 
   return (
     <div className="p-10 max-w-lg mx-auto bg-white shadow-lg rounded-xl">
