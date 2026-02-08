@@ -1,28 +1,36 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { jwtVerify } from 'jose'; // Koristimo 'jose' jer standardni 'jsonwebtoken' ne radi u Edge Runtime-u
+import { jwtVerify } from 'jose';
 
 export async function middleware(request: NextRequest) {
   const token = request.cookies.get('token')?.value;
+  const pathname = request.nextUrl.pathname;
 
-  // Definišemo rute koje želimo da zaštitimo
-  const isDashboardPage = request.nextUrl.pathname.startsWith('/dashboard');
-  const isOrdersPage = request.nextUrl.pathname.startsWith('/narudzbenice');
+  // Routes that should be protected
+  const protectedRoutes = [
+    '/dashboard',
+    '/narudzbenice',
+    '/proizvodi',
+    '/dobavljaci',
+  ];
 
-  if (isDashboardPage || isOrdersPage) {
+  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
+
+  // Allow public routes
+  if (pathname === '/login' || pathname === '/') {
+    return NextResponse.next();
+  }
+
+  if (isProtectedRoute) {
     if (!token) {
-      // Ako nema tokena, šaljemo ga na login
       return NextResponse.redirect(new URL('/login', request.url));
     }
 
     try {
-      // Proveravamo da li je token ispravan
-      const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+      const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'kljuc_za_jwt_token');
       await jwtVerify(token, secret);
-      
       return NextResponse.next();
     } catch (error) {
-      // Ako je token nevažeći (istekao ili hakovan), šaljemo na login
       return NextResponse.redirect(new URL('/login', request.url));
     }
   }
@@ -30,7 +38,6 @@ export async function middleware(request: NextRequest) {
   return NextResponse.next();
 }
 
-// Konfiguracija: Na koje rute se Middleware primenjuje
 export const config = {
-  matcher: ['/dashboard/:path*', '/narudzbenice/:path*'],
+  matcher: ['/dashboard/:path*', '/narudzbenice/:path*', '/proizvodi/:path*', '/dobavljaci/:path*'],
 };

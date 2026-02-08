@@ -13,15 +13,15 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. Provera da li korisnik postoji
-    const result = await query('SELECT * FROM "Korisnik" WHERE email = $1', [email]);
+    const result = await query('SELECT * FROM korisnik WHERE email = $1', [email]);
     const user = result.rows[0];
 
     if (!user) {
       return NextResponse.json({ error: "Pogrešan email ili lozinka" }, { status: 401 });
     }
 
-    // 3. Provera lozinke (poredimo običan tekst sa hešom iz baze)
-    const lozinkaTacna = await bcrypt.compare(lozinka, user.lozinka);
+    // 3. Provera lozinke
+    const lozinkaTacna = await bcrypt.compare(lozinka, user.lozinka_hash);
 
     if (!lozinkaTacna) {
       return NextResponse.json({ error: "Pogrešan email ili lozinka" }, { status: 401 });
@@ -29,33 +29,38 @@ export async function POST(req: NextRequest) {
 
     // 4. Kreiranje JWT tokena
     const token = jwt.sign(
-      { userId: user.id_korisnik, email: user.email },
+      { userId: user.id_korisnik, email: user.email, uloga: user.uloga },
       process.env.JWT_SECRET!,
-      { expiresIn: '1h' } // Token traje sat vremena
+      { expiresIn: '24h' }
     );
 
-    // 5. Slanje odgovora (opciono: možeš poslati token i u HTTP-only kolačiću)
+    // 5. Slanje odgovora
     const response = NextResponse.json({
       message: "Uspešna prijava",
-      user: { id: user.id_korisnik, ime: user.ime, email: user.email }
+      user: { 
+        id: user.id_korisnik, 
+        ime: user.ime,
+        prezime: user.prezime,
+        email: user.email,
+        uloga: user.uloga
+      },
+      token
     }, { status: 200 });
 
-    // Postavljanje tokena u kolačić (browser će ga automatski čuvati)
+    // Postavljanje tokena u kolačić
     response.cookies.set('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      maxAge: 3600,
+      maxAge: 86400,
       path: '/',
     });
 
     return response;
 
- }  catch (error: any) {
-  // Ovo će ti ispisati tačan razlog u Thunder Client-u
+  } catch (error: any) {
     return NextResponse.json({ 
-    error: error.message, 
-    detail: error.detail, // Postgres često ovde piše šta fali
-    code: error.code }, 
-    { status: 500 });
-    }
+      error: error.message, 
+      detail: error.detail
+    }, { status: 500 });
+  }
 }
