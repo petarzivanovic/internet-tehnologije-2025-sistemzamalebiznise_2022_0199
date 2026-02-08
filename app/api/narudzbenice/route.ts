@@ -11,7 +11,10 @@ export async function GET(req: NextRequest) {
     if (!auth) return NextResponse.json({ error: "Nemate pristup" }, { status: 401 });
 
     const searchParams = req.nextUrl.searchParams;
-    const status = searchParams.get("status");
+    if (status && !VALID_STATUS.includes(status as any)) {
+      return NextResponse.json({ error: "Neispravan status" }, { status: 400 });
+}
+
 
     const uloga = (auth as any).uloga;
     const userId = (auth as any).userId;
