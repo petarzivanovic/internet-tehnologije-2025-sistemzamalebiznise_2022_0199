@@ -1,66 +1,77 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import { NextRequest, NextResponse } from "next/server";
+import { query } from "@/lib/db";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, lozinka } = await req.json();
+    const body = await req.json();
 
-    // 1. Validacija unosa
+    const email = String(body?.email ?? "").trim().toLowerCase();
+    const lozinka = String(body?.lozinka ?? "");
+
     if (!email || !lozinka) {
-      return NextResponse.json({ error: "Email i lozinka su obavezni" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Email i lozinka su obavezni" },
+        { status: 400 }
+      );
     }
 
-    // 2. Provera da li korisnik postoji
-    const result = await query('SELECT * FROM korisnik WHERE email = $1', [email]);
+    const result = await query(
+      "SELECT * FROM korisnik WHERE email = $1 LIMIT 1",
+      [email]
+    );
     const user = result.rows[0];
 
     if (!user) {
-      return NextResponse.json({ error: "Pogrešan email ili lozinka" }, { status: 401 });
+      return NextResponse.json(
+        { error: "Pogrešan email ili lozinka" },
+        { status: 401 }
+      );
     }
 
-    // 3. Provera lozinke
     const lozinkaTacna = await bcrypt.compare(lozinka, user.lozinka_hash);
-
     if (!lozinkaTacna) {
-      return NextResponse.json({ error: "Pogrešan email ili lozinka" }, { status: 401 });
+      return NextResponse.json(
+        { error: "Pogrešan email ili lozinka" },
+        { status: 401 }
+      );
     }
 
-    // 4. Kreiranje JWT tokena
+    const jwtSecret = process.env.JWT_SECRET || "kljuc_za_jwt_token";
+
     const token = jwt.sign(
       { userId: user.id_korisnik, email: user.email, uloga: user.uloga },
-      process.env.JWT_SECRET!,
-      { expiresIn: '24h' }
+      jwtSecret,
+      { expiresIn: "24h" }
     );
 
-    // 5. Slanje odgovora
-    const response = NextResponse.json({
-      message: "Uspešna prijava",
-      user: { 
-        id: user.id_korisnik, 
-        ime: user.ime,
-        prezime: user.prezime,
-        email: user.email,
-        uloga: user.uloga
+    const response = NextResponse.json(
+      {
+        message: "Uspešna prijava",
+        user: {
+          id_korisnik: user.id_korisnik,
+          ime: user.ime,
+          prezime: user.prezime,
+          email: user.email,
+          uloga: user.uloga,
+        },
       },
-      token
-    }, { status: 200 });
+      { status: 200 }
+    );
 
-    // Postavljanje tokena u kolačić
-    response.cookies.set('token', token, {
+    response.cookies.set("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: process.env.NODE_ENV === "production",
       maxAge: 86400,
-      path: '/',
+      path: "/",
     });
 
     return response;
-
   } catch (error: any) {
-    return NextResponse.json({ 
-      error: error.message, 
-      detail: error.detail
-    }, { status: 500 });
+    return NextResponse.json(
+      { error: error?.message ?? "Server error" },
+      { status: 500 }
+    );
   }
 }

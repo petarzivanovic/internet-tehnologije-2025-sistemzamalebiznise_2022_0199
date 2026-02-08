@@ -1,4 +1,3 @@
-// app/api/korisnici/[id]/route.ts
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { query } from "@/lib/db";
@@ -8,7 +7,7 @@ const DOZVOLJENE_ULOGE = ["VLASNIK", "RADNIK", "DOSTAVLJAC"];
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  ctx: { params: Promise<{ id: string }> }
 ) {
   try {
     const authUser = await requireAuth(req);
@@ -21,68 +20,54 @@ export async function PATCH(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const idStr = String(params.id ?? "").trim();
+    const { id } = await ctx.params; // ✅ Next traži await
+    const idStr = String(id ?? "").trim();
+
     if (!/^\d+$/.test(idStr)) {
       return NextResponse.json({ error: "Neispravan ID" }, { status: 400 });
     }
     const korisnikId = Number(idStr);
 
+    let body: any = {};
+    try {
+      body = await req.json();
+    } catch (err) {
+    return NextResponse.json(
+    { error: "Neispravan JSON body (pošalji npr. {\"uloga\":\"RADNIK\"})" },
+    { status: 400 }
+  );
+}
 
-    const body = await req.json();
-    const { uloga } = body;
+    const uloga = String(body?.uloga ?? "").trim();
 
-    if (uloga === undefined) {
+    if (!uloga) {
+      return NextResponse.json({ error: "Moraš poslati uloga" }, { status: 400 });
+    }
+
+    if (!DOZVOLJENE_ULOGE.includes(uloga)) {
+      return NextResponse.json({ error: "Neispravna uloga" }, { status: 400 });
+    }
+
+    const authId = Number((authUser as any).userId);
+    if (korisnikId === authId) {
       return NextResponse.json(
-        { error: "Moraš poslati uloga" },
+        { error: "Ne možeš promeniti sopstvenu ulogu" },
         { status: 400 }
       );
     }
-
-    // zaštita: vlasnik ne može menjati sebe
-    const authId = Number((authUser as any).userId ?? (authUser as any).id);
-    if (korisnikId === authId) {  //USERID IL ID 
-      if (uloga && uloga !== "VLASNIK") {
-        return NextResponse.json(
-          { error: "Ne možeš promeniti sopstvenu ulogu" },
-          { status: 400 }
-        );
-      }
-      
-    }
-
-    if (uloga && !DOZVOLJENE_ULOGE.includes(uloga)) {
-      return NextResponse.json(
-        { error: "Neispravna uloga" },
-        { status: 400 }
-      );
-    }
-
-    const polja = [];
-    const vrednosti = [];
-
-    if (uloga !== undefined) {
-      polja.push(`uloga = $${polja.length + 1}`);
-      vrednosti.push(uloga);
-    }
-
-
-    vrednosti.push(korisnikId);
 
     const result = await query(
       `
       UPDATE korisnik
-      SET ${polja.join(", ")}
-      WHERE id_korisnik = $${vrednosti.length}
+      SET uloga = $1
+      WHERE id_korisnik = $2
       RETURNING id_korisnik AS "idKorisnik", ime, prezime, email, uloga
       `,
-      vrednosti
+      [uloga, korisnikId]
     );
 
     if (result.rowCount === 0) {
-      return NextResponse.json(
-        { error: "Korisnik ne postoji" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Korisnik ne postoji" }, { status: 404 });
     }
 
     return NextResponse.json({ korisnik: result.rows[0] });
