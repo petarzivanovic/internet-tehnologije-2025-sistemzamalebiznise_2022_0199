@@ -1,6 +1,6 @@
 "use client";
-import { useEffect, useState } from "react";
-import { useRouter, use } from "next/navigation";
+import { useEffect, useState, use } from "react";
+import { useRouter } from "next/navigation";
 import Button from "@/app/components/Button";
 import { ApiService } from "@/lib/api";
 
@@ -8,7 +8,7 @@ interface OrderDetail {
   id_narudzbenica: number;
   id_dobavljac: number;
   dobavljac_naziv: string;
-  status: 'DRAFT' | 'SENT' | 'RECEIVED';
+  status: 'KREIRANA' | 'POSLATA' | 'ZAVRSENA' | 'OTKAZANA' | 'U_TRANSPORTU' | 'ISPORUCENA';
   ukupna_cena: number;
   napomene?: string;
   datum_kreiranja: string;
@@ -39,7 +39,7 @@ export default function OrderDetailPage({
     const loadOrder = async () => {
       try {
         const data = await ApiService.getOrder(parseInt(id));
-        setOrder(data);
+        setOrder(data as OrderDetail);
       } catch (err: any) {
         setError(err.message);
         if (err.message.includes("401")) {
@@ -52,13 +52,13 @@ export default function OrderDetailPage({
     loadOrder();
   }, [id, router]);
 
-  const handleStatusChange = async (newStatus: 'DRAFT' | 'SENT' | 'RECEIVED') => {
+  const handleStatusChange = async (newStatus: 'POSLATA' | 'ISPORUCENA') => {
     if (!order) return;
     setUpdating(true);
     try {
       await ApiService.updateOrderStatus(order.id_narudzbenica, newStatus);
       const updated = await ApiService.getOrder(order.id_narudzbenica);
-      setOrder(updated);
+      setOrder(updated as OrderDetail);
     } catch (err: any) {
       alert("Greška: " + err.message);
     } finally {
@@ -150,23 +150,23 @@ export default function OrderDetailPage({
       <div className="bg-white p-6 rounded-lg border border-gray-200 mb-6">
         <h2 className="text-lg font-bold mb-4">Prosledi status</h2>
         <div className="flex flex-wrap gap-2">
-          {order.status !== 'SENT' && (
+          {order.status !== 'POSLATA' && (
             <Button
-              label={updating ? "Ažuriranje..." : "Označi kao poslano"}
-              onClick={() => handleStatusChange('SENT')}
+              label={updating ? "Ažuriranje..." : "Označi kao poslato"}
+              onClick={() => handleStatusChange('POSLATA')}
               disabled={updating}
               variant="primary"
             />
           )}
-          {order.status !== 'RECEIVED' && (
+          {order.status !== 'ISPORUCENA' && (
             <Button
               label={updating ? "Ažuriranje..." : "Označi kao primljeno"}
-              onClick={() => handleStatusChange('RECEIVED')}
+              onClick={() => handleStatusChange('ISPORUCENA')}
               disabled={updating}
               variant="success"
             />
           )}
-          {order.status === 'DRAFT' && (
+          {order.status === 'KREIRANA' && (
             <Button
               label="Obriši"
               onClick={handleDelete}

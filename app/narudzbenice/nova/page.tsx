@@ -93,11 +93,14 @@ export default function NovaNarudzbenicaPage() {
 
     try {
       const payload = {
-        id_dobavljac: parseInt(id_dobavljac),
-        stavke: items,
-        ukupna_cena: getTotalPrice(),
-        napomene: napomene || null,
-      };
+      tip: "NABAVKA",
+      dobavljac_id: parseInt(id_dobavljac, 10),
+      napomena: napomene || null,
+      stavke: items.map((it) => ({
+        proizvod_id: it.id_proizvod,
+        kolicina: it.kolicina,
+      })),
+    };
 
       await ApiService.createOrder(payload);
       router.push("/narudzbenice");
@@ -127,11 +130,12 @@ export default function NovaNarudzbenicaPage() {
             required
           >
             <option value="">-- Odaberi dobavljača --</option>
-            {suppliers.map((sup: any) => (
-              <option key={sup.id_dobavljac} value={sup.id_dobavljac}>
-                {sup.naziv}
+              {suppliers.map((sup: any) => (
+                <option key={sup.id_dobavljac} value={sup.id_dobavljac}>
+                  {sup.naziv_firme}
               </option>
-            ))}
+              ))}
+
           </select>
         </div>
 

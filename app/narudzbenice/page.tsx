@@ -8,7 +8,7 @@ interface Order {
   id_narudzbenica: number;
   id_dobavljac: number;
   dobavljac_naziv: string;
-  status: 'DRAFT' | 'SENT' | 'RECEIVED';
+  status: 'KREIRANA' | 'POSLATA' | 'ZAVRSENA' | 'OTKAZANA' | 'U_TRANSPORTU' | 'ISPORUCENA';
   ukupna_cena: number;
   datum_kreiranja: string;
   datum_slanja?: string;
@@ -19,7 +19,7 @@ export default function NarudzbenicePage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [filter, setFilter] = useState<'ALL' | 'DRAFT' | 'SENT' | 'RECEIVED'>('ALL');
+  const [filter, setFilter] = useState<'ALL' | 'KREIRANA' | 'POSLATA' | 'ZAVRSENA' | 'OTKAZANA' | 'U_TRANSPORTU' | 'ISPORUCENA'>('ALL');
   const router = useRouter();
 
   useEffect(() => {
@@ -43,9 +43,12 @@ export default function NarudzbenicePage() {
 
   const getStatusBadge = (status: string) => {
     const colors = {
-      'DRAFT': 'bg-gray-100 text-gray-800',
-      'SENT': 'bg-blue-100 text-blue-800',
-      'RECEIVED': 'bg-green-100 text-green-800',
+      'KREIRANA': 'bg-gray-100 text-gray-800',
+      'POSLATA': 'bg-blue-100 text-blue-800',
+      'ZAVRSENA': 'bg-green-100 text-green-800',
+      'OTKAZANA': 'bg-red-100 text-red-800',
+      'U_TRANSPORTU': 'bg-yellow-100 text-yellow-800',
+      'ISPORUCENA': 'bg-green-100 text-green-800',
     };
     return colors[status as keyof typeof colors] || 'bg-gray-100';
   };
@@ -75,7 +78,7 @@ export default function NarudzbenicePage() {
       {error && <div className="bg-red-100 text-red-700 p-3 rounded mb-4">{error}</div>}
 
       <div className="flex gap-2 mb-6">
-        {(['ALL', 'DRAFT', 'SENT', 'RECEIVED'] as const).map(status => (
+        {(['ALL', 'KREIRANA', 'POSLATA', 'ZAVRSENA'] as const).map(status => (
           <button
             key={status}
             onClick={() => setFilter(status)}
@@ -118,7 +121,7 @@ export default function NarudzbenicePage() {
                   <Link href={`/narudzbenice/${order.id_narudzbenica}`} className="text-blue-600 hover:underline text-xs mr-2">
                     Pregled
                   </Link>
-                  {order.status === 'DRAFT' && (
+                  {order.status === 'KREIRANA' && (
                     <button
                       onClick={() => handleDelete(order.id_narudzbenica)}
                       className="text-red-600 hover:underline text-xs"
