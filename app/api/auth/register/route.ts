@@ -90,6 +90,8 @@ export async function POST(req: NextRequest) {
       return addCorsHeaders(req, NextResponse.json({ error: "Neispravna uloga" }, { status: 400 }));
     }
 
+    console.log('📝 Pokušaj registracije:', { ime, prezime, email, uloga });
+
     const hashedLozinka = await bcrypt.hash(lozinka, 10);
 
     const result = await query(
@@ -99,17 +101,24 @@ export async function POST(req: NextRequest) {
       [ime, prezime, email, hashedLozinka, uloga]
     );
 
+    console.log('✅ Korisnik registrovan:', result.rows[0]);
+
     return addCorsHeaders(req, NextResponse.json(
       { message: "Registrovan", user: result.rows[0] },
       { status: 201 }
     ));
   } catch (error: any) {
+    console.error('❌ Greška pri registraciji:', error);
+    
     if (error?.code === "23505") {
       return addCorsHeaders(req, NextResponse.json(
         { error: "Email je već u upotrebi" },
         { status: 409 }
       ));
     }
-    return addCorsHeaders(req, NextResponse.json({ error: error.message }, { status: 500 }));
+    return addCorsHeaders(req, NextResponse.json(
+      { error: error.message || "Greška pri registraciji" },
+      { status: 500 }
+    ));
   }
 }

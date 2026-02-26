@@ -74,6 +74,8 @@ export async function POST(req: NextRequest) {
       ));
     }
 
+    console.log('🔑 Pokušaj login-a za email:', email);
+
     const result = await query(
       "SELECT * FROM korisnik WHERE email = $1 LIMIT 1",
       [email]
@@ -81,6 +83,7 @@ export async function POST(req: NextRequest) {
     const user = result.rows[0];
 
     if (!user) {
+      console.log('❌ Korisnik nije pronađen:', email);
       return addCorsHeaders(req, NextResponse.json(
         { error: "Pogrešan email ili lozinka" },
         { status: 401 }
@@ -89,6 +92,7 @@ export async function POST(req: NextRequest) {
 
     const lozinkaTacna = await bcrypt.compare(lozinka, user.lozinka_hash);
     if (!lozinkaTacna) {
+      console.log('❌ Lozinka nije tačna za email:', email);
       return addCorsHeaders(req, NextResponse.json(
         { error: "Pogrešan email ili lozinka" },
         { status: 401 }
@@ -102,6 +106,8 @@ export async function POST(req: NextRequest) {
       .setProtectedHeader({ alg: "HS256" })
       .setExpirationTime("24h")
       .sign(secret);
+
+    console.log('✅ Login uspešan za:', email);
 
     const response = NextResponse.json(
       {
@@ -127,6 +133,7 @@ export async function POST(req: NextRequest) {
 
     return addCorsHeaders(req, response);
   } catch (error: any) {
-    return addCorsHeaders(req, NextResponse.json({ error: error.message }, { status: 500 }));
+    console.error('❌ Greška pri login-u:', error);
+    return addCorsHeaders(req, NextResponse.json({ error: error.message || "Greška pri login-u" }, { status: 500 }));
   }
 }

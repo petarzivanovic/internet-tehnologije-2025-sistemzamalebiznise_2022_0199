@@ -39,6 +39,7 @@ export async function GET(req: NextRequest) {
     const token = req.cookies.get("token")?.value;
 
     if (!token) {
+      console.log('⚠️ Nema token cookie-ja');
       return addCorsHeaders(req, NextResponse.json({ error: "Niste ulogovani" }, { status: 401 }));
     }
 
@@ -47,9 +48,11 @@ export async function GET(req: NextRequest) {
     );
 
     const { payload } = await jose.jwtVerify(token, secret);
+    console.log('✅ Token verificiran:', payload);
 
     return addCorsHeaders(req, NextResponse.json({ user: payload }, { status: 200 }));
-  } catch (_) {
+  } catch (error: any) {
+    console.error('❌ Greška pri verifikaciji tokena:', error.message);
     return addCorsHeaders(req, NextResponse.json({ error: "Nevalidan token" }, { status: 401 }));
   }
 }
