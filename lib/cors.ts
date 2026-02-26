@@ -25,7 +25,8 @@ export function addCorsHeaders(req: NextRequest, res: NextResponse): NextRespons
     if (!origin) return false;
     return ALLOWED_ORIGINS.includes(origin) || 
            origin.endsWith(".vercel.app") || 
-           origin.endsWith(".onrender.com");
+           origin.endsWith(".onrender.com") ||
+           origin.endsWith(".lovable.app");
   };
   
   if (origin && isAllowedOrigin(origin)) {
