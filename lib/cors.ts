@@ -16,6 +16,7 @@ const ALLOWED_ORIGINS = [
   "https://internet-tehnologije-2025-9nvi.onrender.com",
   "https://internet-tehnologije-2025-sistemzam.vercel.app",
   "https://internet-tehnologije-2025-sistemzamalebiznise-2022-0-5gi4kmeq3.vercel.app",
+  "https://internet-tehnologije-2025-sistemzamalebiznise-2022-0-m2rqo3zjb.vercel.app",
 ];
 
 export function addCorsHeaders(req: NextRequest, res: NextResponse): NextResponse {
