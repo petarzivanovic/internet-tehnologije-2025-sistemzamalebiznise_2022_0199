@@ -55,6 +55,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email,
       lozinka,
     });
+    
+    // DEBUG: Provjeri da li je cookie postavljen
+    console.log('Login odgovor:', data);
+    console.log('Cookies nakon login-a:', document.cookie);
+    
     if (data.user) {
       setUser(data.user);
     } else {

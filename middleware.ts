@@ -1,15 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { addCorsHeaders, handleOptions } from "./lib/cors";
 
-/**
- * Security middleware:
- * - XSS zaštita putem HTTP security headera
- * - Zaštita page ruta (redirect na login ako nema tokena)
- *
- * Napomena: SQL Injection zaštita je u lib/db.ts (parametrizovani upiti),
- * CORS zaštita je u lib/cors.ts (origin whitelist).
- */
 
 function addSecurityHeaders(res: NextResponse): NextResponse {
   // Sprečava MIME-type sniffing (XSS vektor)
@@ -23,7 +14,7 @@ function addSecurityHeaders(res: NextResponse): NextResponse {
   // Ograničava dozvoljena izvršavanja resursa (CSP)
   res.headers.set(
     "Content-Security-Policy",
-    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' http://localhost:* ws://localhost:*"
+    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' http://localhost:* ws://localhost:* https://internet-tehnologije-2025-9nvi.onrender.com https://*.vercel.app https://*.render.com"
   );
   // Zabranjuje pristup kamera, mikrofonu, geolokaciji
   res.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
@@ -33,21 +24,16 @@ function addSecurityHeaders(res: NextResponse): NextResponse {
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // CORS na samom početku za API rute
-  if (pathname.startsWith("/api")) {
-    // Preflight OPTIONS zahtevi
-    if (req.method === "OPTIONS") {
-      return handleOptions(req);
-    }
-    // Dodaj CORS header-e za sve ostale API zahteve
-    const res = NextResponse.next();
-    return addCorsHeaders(req, res);
-  }
-
   // Swagger UI stranica — bez restriktivnog CSP-a jer koristi inline stilove/skripte
   if (pathname.startsWith("/swagger") || pathname.startsWith("/api/swagger")) {
     const res = NextResponse.next();
     return res;
+  }
+
+  // 1) Za API rute — samo dodaj security headere, auth rade same rute
+  if (pathname.startsWith("/api")) {
+    const res = NextResponse.next();
+    return addSecurityHeaders(res);
   }
 
   // 2) Štiti page rute
@@ -70,7 +56,7 @@ export function middleware(req: NextRequest) {
   return addSecurityHeaders(res);
 }
 
-// Ograniči match na page rute
+// Ograniči match na page rute (API preskačemo gore, ali bolje i ovde)
 export const config = {
   matcher: ["/((?!_next|favicon.ico).*)"],
 };
